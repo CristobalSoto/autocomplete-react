@@ -14,6 +14,24 @@ interface Country {
 const AutoComplete: React.FC<IAutoCompleteProps> = ({ placeholder }) => {
     const [inputValue, setInputValue] = useState<string>('');
     const [suggestions, setSuggestions] = useState<Country[]>([]);
+    const [completionPercentage, setCompletionPercentage] = useState<number>(0);
+    const [ws, setWs] = useState<WebSocket | null>(null);
+
+    useEffect(() => {
+        // Establish WebSocket connection
+        const websocket = new WebSocket('ws://localhost:8080');
+        websocket.onopen = () => console.log('WebSocket connected');
+        websocket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            setCompletionPercentage(data.completion);
+        };
+        websocket.onclose = () => console.log('WebSocket disconnected');
+        setWs(websocket);
+
+        return () => {
+            websocket.close();
+        };
+    }, []);
 
     // Implement debouncing
     useEffect(() => {
@@ -41,6 +59,13 @@ const AutoComplete: React.FC<IAutoCompleteProps> = ({ placeholder }) => {
 
         return () => clearTimeout(timeoutId);
     }, [inputValue]);
+
+    useEffect(() => {
+        // Send current input to WebSocket server
+        if (ws && inputValue) {
+            ws.send(inputValue);
+        }
+    }, [inputValue, ws]);
 
     const handleSelectSuggestion = (suggestion: string) => {
         setInputValue(suggestion); // Set the input value to the selected suggestion
@@ -71,6 +96,9 @@ const AutoComplete: React.FC<IAutoCompleteProps> = ({ placeholder }) => {
                     ))}
                 </ul>
             )}
+            <div className={styles.completion}>
+                Completion: {completionPercentage}%
+            </div>
         </div>
     );
 };

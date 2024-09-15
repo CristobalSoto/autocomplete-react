@@ -21,6 +21,10 @@
   outline: none; /* Removes default focus outline */
 }
 
+.completion {
+  color: #333;
+}
+
 .suggestions {
   list-style: none;
   margin: 0;
